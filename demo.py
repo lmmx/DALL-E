@@ -8,7 +8,7 @@ import torchvision.transforms as T
 import torchvision.transforms.functional as TF
 import torch.nn.functional as F
 
-from dall_e import map_pixels, unmap_pixels, load_model
+from dall_e import map_pixels, unmap_pixels, load_model, models_path
 
 target_image_size = 256
 
@@ -37,18 +37,25 @@ def preprocess(img):
 dev = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 
 # For faster load times, download these files locally and use the local paths instead.
-enc = load_model("https://cdn.openai.com/dall-e/encoder.pkl", dev)
-dec = load_model("https://cdn.openai.com/dall-e/decoder.pkl", dev)
+enc_path = models_path / "encoder.pkl"
+enc_url = "https://cdn.openai.com/dall-e/encoder.pkl"
 
-img2_url = (
+dec_path = models_path / "decoder.pkl"
+dec_url = "https://cdn.openai.com/dall-e/decoder.pkl"
+
+enc = load_model(str(enc_path), dev)
+dec = load_model(str(dec_path), dev)
+
+penguin_url = (
     "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/iKIWgaiJUtss/v2/1000x-1.jpg"
 )
-x = preprocess(download_image(img2_url))
+penguin_img = download_image(penguin_url)
+x = preprocess(penguin_img)
 # Display the original image
 print("Original image:")
-x
+penguin_img.show()
 
-z_logits = enc(x)
+z_logits = enc(x.to(dev))
 z = torch.argmax(z_logits, axis=1)
 z = F.one_hot(z, num_classes=enc.vocab_size).permute(0, 3, 1, 2).float()
 
@@ -58,4 +65,4 @@ x_rec = T.ToPILImage(mode="RGB")(x_rec[0])
 
 print("Reconstructed image:")
 # Display the reconstructed image
-x_rec
+x_rec.show()
